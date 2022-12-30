@@ -9,8 +9,16 @@ const fps = 30;
 const mainColour = "white";
 const backgroundColour = "black";
 
+let lastp1KeyDown;
+let lastp1KeyUp;
+let lastp2KeyDown;
+let lastp2KeyUp;
+
+let running = false;
+let winner = 0; //1 = player 1, 2 = player 2
 let p1Score = 0;
 let p2Score = 0;
+const maxScore = 1;
 
 class Paddle {
     static width = 20;
@@ -33,8 +41,8 @@ class Paddle {
     }
 
     reset() {
-        this.x = initialX;
-        this.y = initialY;
+        this.x = this.initialX;
+        this.y = this.initialY;
     }
 }
 
@@ -44,12 +52,13 @@ class PlayerPaddle extends Paddle {
         super(playerNo, x, y);
     }
 
-    update(key, keyDown) {
-        if (keyDown) {
+    update() {
+        if (lastp1KeyDown || lastp2KeyDown) {
             if (this.playerNo === 1) {
-                this.velY = key === "w" ? -Paddle.speed : key === "s" ? Paddle.speed : 0;
-            } else {
-                this.velY = key === "a" ? -Paddle.speed : key === "d" ? Paddle.speed : 0;
+                this.velY = lastp1KeyDown === "w" ? -Paddle.speed : lastp1KeyDown === "s" ? Paddle.speed : 0;
+                console.log(this.playerNo, this.velY);
+            } else if (this.playerNo === 2) {
+                this.velY = lastp2KeyDown === "p" ? -Paddle.speed : lastp2KeyDown === "l" ? Paddle.speed : 0;
             }
             if (this.y + this.velY <= 0 || this.y + Paddle.height + this.velY >= canvasHeight) {
                 this.velY = 0;
@@ -57,9 +66,11 @@ class PlayerPaddle extends Paddle {
                 this.y += this.velY;
             }
         } else {
-            if (key === "w" || key === "s"
-                || key === "a" || key === "d") {
-                this.velY = 0;
+            if (lastp1KeyUp || lastp2KeyUp) {
+                if ((this.playerNo === 1 && ((lastp1KeyUp === "w" || lastp1KeyUp === "s") && lastp1KeyDown === lastp1KeyUp))
+                    || (this.playerNo === 2 && (lastp2KeyUp === "p" || lastp2KeyUp === "l" && lastp2KeyDown === lastp2KeyUp))) {
+                    this.velY = 0;
+                }
             }
         }
     }
@@ -158,39 +169,82 @@ function reset() {
     p2.reset();
 }
 
-
-
 document.addEventListener("keydown", (e) => {
-    p1.update(e.key, true);
-    p2.update(e.key, true);
+    const k = e.key;
+    if (k === " " || k === "space") {
+        if (running) {
+            running = false;
+            reset();
+            p1Score = 0;
+            p2Score = 0;
+            winner = 0;
+        } else {
+            running = true;
+        }
+    }
+    if (running) {
+        if (k === "w" || k === "s") {
+            lastp1KeyDown = k;
+            lastp1KeyUp = undefined;
+        } else if (k === "p" || k === "l") {
+            lastp2KeyDown = k;
+            lastp2KeyUp = undefined;
+        }
+    }
 });
 document.addEventListener("keyup", (e) => {
-    p1.update(e.key, false);
-    p2.update(e.key, false);
-})
-
+    const k = e.key;
+    if (running) {
+        if (k === "w" || k === "s") {
+            lastp1KeyUp = k;
+            lastp1KeyDown = undefined;
+        } else if (k === "p" || k === "l") {
+            lastp2KeyUp = k;
+            lastp2KeyDown = undefined;
+        }
+    }
+});
+reset();
 setInterval(() => {
     clearScreen();
-    drawBackground();
-    ball.update();
-    p1.update();
-    p2.update();
-    if (ballIntersects(ball, p1)) {
-        console.log("ball intersected with player 1");
-        calcNewBallSpeed(p1, ball);
+    if (running) {
+        drawBackground();
+        ball.update();
+        p1.update();
+        p2.update();
+        if (ballIntersects(ball, p1)) {
+            console.log("ball intersected with player 1");
+            calcNewBallSpeed(p1, ball);
+        }
+        if (ballIntersects(ball, p2)) {
+            console.log("ball intersected with player 2");
+            calcNewBallSpeed(p2, ball);
+        }
+        if (ball.x - ball.r <= 0) {
+            p2Score += 1;
+            reset();
+        } else if (ball.x + ball.r >= canvasWidth) {
+            p1Score += 1;
+            reset();
+        }
     }
-    if (ballIntersects(ball, p2)) {
-        console.log("ball intersected with player 2");
-        calcNewBallSpeed(p2, ball);
-    }
-    if (ball.x - ball.r <= 0) {
-        p1Score += 1;
+    if (p1Score === maxScore || p2Score === maxScore) {
+        running = false;
+        winner = p1Score === maxScore ? 1 : 2;
         reset();
-    } else if (ball.x + ball.r >= canvasWidth) {
-        p2Score += 1;
-        reset();
+        p1Score = 0;
+        p2Score = 0;
     }
     ball.render();
     p1.render();
     p2.render();
+    if (!running) {
+        ctx.fillStyle = "white";
+        ctx.font = "100px sans-serif";
+        if (winner !== 0) {
+            ctx.fillText("Player " + winner + " won!", canvasWidth * 0.325, canvasHeight * 0.20, canvasWidth * 0.4)
+        }
+        ctx.font = "124px sans-serif";
+        ctx.fillText("Press space to play", canvasWidth * 0.1, canvasHeight * 0.35, canvasWidth * 0.8);
+    }
 }, 1000 / fps);
