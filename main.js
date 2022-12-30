@@ -4,7 +4,7 @@ const ctx = canvasEl.getContext("2d");
 const canvasWidth = canvasEl.width;
 const canvasHeight = canvasEl.height;
 
-const fps = 10;
+const fps = 30;
 
 const mainColour = "white";
 const backgroundColour = "black";
@@ -12,7 +12,8 @@ const backgroundColour = "black";
 class Paddle {
     static width = 20;
     static height = 100;
-    static velocity = 2;
+    static speed = 10;
+    velY = 0;
 
     constructor(playerNo, x, y) {
         this.playerNo = playerNo;
@@ -20,14 +21,35 @@ class Paddle {
         this.y = y;
     }
 
-    update() {
-
-    }
-
     render() {
         ctx.fillStyle = "white";
-        // console.log("paddle render", this.x, this.y, Paddle.width, Paddle.height)
         ctx.fillRect(this.x, this.y, Paddle.width, Paddle.height);
+    }
+}
+
+class PlayerPaddle extends Paddle {
+    constructor(playerNo, x, y) {
+        super(playerNo, x, y);
+    }
+
+    update(key, keyDown) {
+        if (keyDown) {
+            if (this.playerNo === 1) {
+                this.velY = key === "w" ? -Paddle.speed : key === "s" ? Paddle.speed : 0;
+            } else {
+                this.velY = key === "p" ? -Paddle.speed : key === "l" ? Paddle.speed : 0;
+            }
+            if (this.y + this.velY <= 0 || this.y + Paddle.height + this.velY >= canvasHeight) {
+                this.velY = 0;
+            } else {
+                this.y += this.velY;
+            }
+        } else {
+            if (key === "w" || key === "s"
+                || key === "p" || key === "l") {
+                this.velY = 0;
+            }
+        }
     }
 }
 
@@ -86,9 +108,16 @@ function calcNewBallSpeed(player, ball) {
     }
 }
 
-const p1 = new Paddle(1, Paddle.width + 10, (canvasHeight / 2) - (Paddle.height / 2));
-const p2 = new Paddle(2, canvasWidth - Paddle.width * 2 - 10, (canvasHeight / 2) - (Paddle.height / 2));
+const p1 = new PlayerPaddle(1, Paddle.width + 10, (canvasHeight / 2) - (Paddle.height / 2));
+const p2 = new PlayerPaddle(2, canvasWidth - Paddle.width * 2 - 10, (canvasHeight / 2) - (Paddle.height / 2));
 ball.init();
+
+document.addEventListener("keydown", (e) => {
+    p1.update(e.key, true);
+});
+document.addEventListener("keyup", (e) => {
+    p1.update(e.key, false);
+})
 
 setInterval(() => {
     clearScreen();
@@ -103,7 +132,6 @@ setInterval(() => {
         console.log("ball intersected with player 2");
         calcNewBallSpeed(2, ball);
     }
-
     ball.render();
     p1.render();
     p2.render();
