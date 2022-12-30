@@ -18,7 +18,7 @@ let running = false;
 let winner = 0; //1 = player 1, 2 = player 2
 let p1Score = 0;
 let p2Score = 0;
-const maxScore = 1;
+const maxScore = 5;
 
 class Paddle {
     static width = 20;
