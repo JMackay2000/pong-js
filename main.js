@@ -56,7 +56,6 @@ class PlayerPaddle extends Paddle {
         if (lastp1KeyDown || lastp2KeyDown) {
             if (this.playerNo === 1) {
                 this.velY = lastp1KeyDown === "w" ? -Paddle.speed : lastp1KeyDown === "s" ? Paddle.speed : 0;
-                console.log(this.playerNo, this.velY);
             } else if (this.playerNo === 2) {
                 this.velY = lastp2KeyDown === "p" ? -Paddle.speed : lastp2KeyDown === "l" ? Paddle.speed : 0;
             }
@@ -213,11 +212,9 @@ setInterval(() => {
         p1.update();
         p2.update();
         if (ballIntersects(ball, p1)) {
-            console.log("ball intersected with player 1");
             calcNewBallSpeed(p1, ball);
         }
         if (ballIntersects(ball, p2)) {
-            console.log("ball intersected with player 2");
             calcNewBallSpeed(p2, ball);
         }
         if (ball.x - ball.r <= 0) {
